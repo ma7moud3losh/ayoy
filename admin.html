@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>لوحة الأدمن - المنتجات</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+<style>
+body{font-family:'Tajawal',sans-serif;padding:20px;background:#fdf4f2;color:#333;}
+h2{text-align:center;margin-bottom:20px;}
+table{width:100%;border-collapse:collapse;margin-top:20px;}
+th, td{border:1px solid #ccc;padding:10px;text-align:center;}
+th{background:#d8a49c;color:#fff;}
+input{padding:8px;width:100%;margin:5px 0;border:1px solid #ccc;border-radius:5px;}
+button{padding:8px 12px;background:#d8a49c;color:white;border:none;border-radius:5px;cursor:pointer;margin-top:10px;}
+.delete-btn{background:#e63946;}
+a{display:inline-block;margin-bottom:20px;color:black;background-color:#d8a49c ;margin-left:25px;font-weight:500;text-decoration:none;color:inherit}
+</style>
+</head>
+<body>
+<a href="admin-offers.html">خاص بالعروض</a>
+<h2>لوحة الأدمن - إدارة المنتجات</h2>
+
+<h3>➕ إضافة منتج جديد</h3>
+<div>
+  <input id="pTitle" placeholder="اسم المنتج">
+  <input id="pDesc" placeholder="الوصف">
+  <input id="pPrice" type="number" placeholder="السعر">
+  <input id="pStock" type="number" placeholder="الكمية في المخزون">
+  <input id="pImageFile" type="file" accept="image/*">
+<button onclick="addProduct()">إضافة المنتج</button>
+
+</div>
+<h3>🧾 الطلبات</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>اسم العميل</th>
+      <th>الموبايل</th>
+      <th>العنوان</th>
+      <th>الإجمالي</th>
+      <th>الحالة</th>
+      <th>التاريخ</th>
+      <th>تغيير الحالة</th>
+    </tr>
+  </thead>
+  <tbody id="ordersTable"></tbody>
+</table>
+
+
+<h3>📦 المنتجات الحالية</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>الصورة</th>
+      <th>اسم المنتج</th>
+      <th>الوصف</th>
+      <th>السعر</th>
+      <th>المخزون</th>
+      <th>حذف</th>
+    </tr>
+  </thead>
+  <tbody id="productsTable"></tbody>
+</table>
+
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const supabaseUrl = "https://qccpddjnozehorhleegz.supabase.co";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjY3BkZGpub3plaG9yaGxlZWd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2MTc0NzEsImV4cCI6MjA3OTE5MzQ3MX0.WzG0u9c6wY9eTTh0olIzrPSSPoHhuQhmLTS7zPxXBGA";
+
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+// -----------------------------
+// عرض المنتجات
+// -----------------------------
+async function loadProducts() {
+  const { data, error } = await supabase
+    .from("products")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) { console.error(error); return; }
+
+  const table = document.getElementById("productsTable");
+  table.innerHTML = "";
+
+  data.forEach(product => {
+    table.innerHTML += `
+      <tr>
+        <td><img src="${product.image_url}" width="60"></td>
+        <td>${product.title}</td>
+        <td>${product.description}</td>
+        <td>${product.price} جنيه</td>
+        <td>${product.stock}</td>
+        <td><button class="delete-btn" onclick="deleteProduct('${product.id}')">حذف</button></td>
+      </tr>
+    `;
+  });
+}
+
+// -----------------------------
+// إضافة منتج
+// -----------------------------
+async function addProduct() {
+  let title = document.getElementById("pTitle").value;
+  let desc = document.getElementById("pDesc").value;
+  let price = document.getElementById("pPrice").value;
+  let stock = document.getElementById("pStock").value;
+  let imageFile = document.getElementById("pImageFile").files[0];
+
+  if (!title || !price || !imageFile) {
+    alert("⚠ من فضلك أدخل اسم المنتج والسعر والصورة");
+    return;
+  }
+
+  // 1️⃣ رفع الصورة لـ Storage
+  const fileExt = imageFile.name.split(".").pop();
+  const fileName = `${Date.now()}.${fileExt}`;
+  const filePath = `${fileName}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('products-images')
+    .upload(filePath, imageFile);
+
+  if (uploadError) {
+    console.error(uploadError);
+    alert("❌ خطأ أثناء رفع الصورة");
+    return;
+  }
+
+  // 2️⃣ الحصول على رابط الصورة
+  const { data: publicUrlData } = supabase.storage
+    .from('products-images')
+    .getPublicUrl(filePath);
+
+  const image_url = publicUrlData.publicUrl;
+
+  // 3️⃣ إضافة المنتج إلى قاعدة البيانات
+  const { error } = await supabase
+    .from("products")
+    .insert([
+      { 
+        title, 
+        description: desc, 
+        price, 
+        stock, 
+        image_url 
+      }
+    ]);
+
+  if (error) {
+    alert("❌ خطأ أثناء إضافة المنتج");
+    console.error(error);
+    return;
+  }
+
+  alert("✔ تمت إضافة المنتج بنجاح!");
+  loadProducts();
+}
+async function updateOrderStatus(orderId, newStatus) {
+  // تحديث الحالة في Supabase
+  const { data, error } = await supabase
+    .from("orders")       // تأكد اسم الجدول بالضبط
+    .update({ status: newStatus })
+    .eq("id", orderId);
+
+  if (error) {
+    console.error("خطأ أثناء تحديث الحالة:", error);
+    alert("❌ حدث خطأ أثناء تحديث الحالة");
+    return;
+  }
+
+  // إعادة تحميل الجدول لتأكيد التغيير
+  loadOrders();
+}
+
+
+async function loadOrders() {
+  const { data, error } = await supabase
+    .from("orders")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  const table = document.getElementById("ordersTable");
+  table.innerHTML = "";
+
+  data.forEach(order => {
+    table.innerHTML += `
+      <tr>
+        <td>${order.customer_name}</td>
+        <td>${order.phone}</td>
+        <td>${order.address}</td>
+        <td>${order.total} جنيه</td>
+        <td><b>${order.status}</b></td>
+        <td>${new Date(order.created_at).toLocaleDateString("ar-EG")}</td>
+        <td>
+          <select onchange="updateOrderStatus('${order.id}', this.value)">
+            <option ${order.status==='جديد'?'selected':''}>جديد</option>
+            <option ${order.status==='قيد التنفيذ'?'selected':''}>قيد التنفيذ</option>
+            <option ${order.status==='تم التسليم'?'selected':''}>تم التسليم</option>
+          </select>
+        </td>
+      </tr>
+    `;
+  });
+}
+// -----------------------------
+// حذف منتج
+// -----------------------------
+async function deleteProduct(id) {
+  if (!confirm("هل أنت متأكد من حذف هذا المنتج؟")) return;
+
+  const { error } = await supabase
+    .from("products")
+    .delete()
+    .eq("id", id);
+
+  if (error) { alert("❌ حدث خطأ أثناء الحذف"); return; }
+
+  alert("🗑️ تم حذف المنتج بنجاح!");
+  loadProducts();
+}
+window.onload = () => {
+  loadProducts();
+  loadOrders();
+};
+
+
+</script>
+
+</body>
+</html>

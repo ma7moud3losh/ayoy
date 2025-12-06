@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AYA ELSAYED - العروض</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Tajawal',sans-serif}
+body{background:#fdf4f2;color:#333}
+
+header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:20px;
+  background:#fff;
+}
+nav a{margin-left:15px;font-weight:600}
+
+.cart-btn{
+  position:fixed;
+  left:20px;
+  bottom:20px;
+  padding:12px 16px;
+  background:#d97706;
+  color:#fff;
+  border:none;
+  border-radius:50px;
+  font-size:16px;
+  cursor:pointer;
+  z-index:200;
+}
+a{text-decoration:none;color:inherit}
+
+/* Offers page */
+.offers-page{padding:40px}
+.offer-list{
+  display:flex;
+  gap:20px;
+  flex-wrap:wrap;
+  justify-content:center;
+}
+.offer-item{
+  background:#fff;
+  width:220px;
+  padding:15px;
+  border-radius:15px;
+  text-align:center;
+  box-shadow:0 5px 10px rgba(0,0,0,.1);
+}
+.offer-item img{
+  width:100%;
+  border-radius:10px;
+  margin-bottom:10px;
+}
+.offer-item button{
+  margin-top:10px;
+  padding:8px;
+  background:#16a34a;
+  color:#fff;
+  border:none;
+  border-radius:5px;
+  cursor:pointer;
+}
+
+/* Cart popup */
+#cartPopup{
+  position:fixed;
+  bottom:90px;
+  left:20px;
+  width:320px;
+  background:#fff;
+  padding:15px;
+  border-radius:15px;
+  box-shadow:0 10px 25px rgba(0,0,0,.2);
+  display:none;
+  z-index:300;
+}
+#cartPopup ul{
+  list-style:none;
+  max-height:200px;
+  overflow-y:auto;
+  margin-bottom:10px;
+}
+#cartPopup li{
+  margin-bottom:8px;
+  border-bottom:1px solid #eee;
+  padding-bottom:5px;
+}
+#cartPopup button{
+  margin:2px;
+  padding:4px 7px;
+  border:none;
+  border-radius:5px;
+  cursor:pointer;
+}
+.remove-btn{background:#dc2626;color:#fff}
+.qty-btn{background:#eee}
+#cartPopup input,#cartPopup textarea{
+  width:100%;
+  padding:6px;
+  margin-bottom:5px;
+}
+.send-btn{
+  background:#16a34a;
+  color:#fff;
+  padding:8px;
+  width:100%;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <div class="logo">AYA ELSAYED</div>
+  <nav>
+    <a href="market.html">الرئيسية</a>
+    <a href="offers.html">العروض</a>
+  </nav>
+</header>
+
+<button class="cart-btn" onclick="toggleCart()">
+  🛒 السلة (<span id="cartCount">0</span>)
+</button>
+
+<section class="offers-page">
+  <h2 style="text-align:center;margin-bottom:20px">🔥 العروض الحالية</h2>
+  <div class="offer-list" id="offerList"></div>
+</section>
+
+<!-- Cart popup -->
+<div id="cartPopup">
+  <h3 style="text-align:center">سلة المشتريات</h3>
+
+  <ul id="cartItems"></ul>
+
+  <form id="orderForm">
+    <input id="customerName" placeholder="الاسم" required>
+    <input id="phone" placeholder="رقم الهاتف" required>
+    <textarea id="address" placeholder="العنوان" required></textarea>
+    <button class="send-btn">إرسال الطلب</button>
+  </form>
+
+  <button onclick="clearCart()" style="margin-top:5px">إفراغ السلة</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  // --- Supabase client ---
+  const SUPABASE_URL = "https://qccpddjnozehorhleegz.supabase.co";
+  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjY3BkZGpub3plaG9yaGxlZWd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2MTc0NzEsImV4cCI6MjA3OTE5MzQ3MX0.WzG0u9c6wY9eTTh0olIzrPSSPoHhuQhmLTS7zPxXBGA";
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // --- Cart ---
+  let cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+  function toggleCart(){
+    cartPopup.style.display = cartPopup.style.display === "block" ? "none" : "block";
+  }
+
+  function addToCart(offer){
+    const found = cart.find(i => i.id === offer.id);
+    if(found){ found.qty++; } 
+    else { cart.push({id: offer.id, title: offer.title, price: offer.new_price, qty:1}); }
+    updateCartUI();
+  }
+
+  function changeQty(index, amount){
+    cart[index].qty += amount;
+    if(cart[index].qty <= 0) cart.splice(index,1);
+    updateCartUI();
+  }
+
+  function removeFromCart(index){ cart.splice(index,1); updateCartUI(); }
+  function clearCart(){ cart = []; updateCartUI(); }
+
+  function updateCartUI(){
+    cartItems.innerHTML = "";
+    let totalQty = 0;
+    cart.forEach((item,i)=>{
+      totalQty += item.qty;
+      cartItems.innerHTML += `
+        <li>
+          <b>${item.title}</b><br>
+          <button class="qty-btn" onclick="changeQty(${i},-1)">➖</button>
+          ${item.qty}
+          <button class="qty-btn" onclick="changeQty(${i},1)">➕</button>
+          | ${item.price * item.qty} جنيه
+          <button class="remove-btn" onclick="removeFromCart(${i})">❌</button>
+        </li>
+      `;
+    });
+    cartCount.innerText = totalQty;
+    localStorage.setItem("cart", JSON.stringify(cart));
+  }
+
+  // --- Load offers ---
+  async function loadOffers(){
+    const { data, error } = await supabaseClient.from("offers").select("*");
+    if(error){ console.error(error); return; }
+
+    offerList.innerHTML = "";
+    data.forEach(o=>{
+      offerList.innerHTML += `
+        <div class="offer-item">
+          <img src="${o.image_url}">
+          <h3>${o.title}</h3>
+          <p><del>${o.old_price} جنيه</del> → <b>${o.new_price} جنيه</b></p>
+          <button onclick='addToCart(${JSON.stringify(o)})'>أضف للسلة</button>
+        </div>
+      `;
+    });
+  }
+
+  // --- Send order ---
+  orderForm.addEventListener("submit", async e=>{
+    e.preventDefault();
+    if(cart.length === 0) return alert("السلة فاضية");
+
+    const total = cart.reduce((sum,i)=>sum+(i.price*i.qty),0);
+
+    const { error } = await supabaseClient.from("order_offers").insert([{
+      customer_name: customerName.value,
+      phone: phone.value,
+      address: address.value,
+      items: cart,
+      total: total,
+      status: "جديد"
+    }]);
+
+    if(error){
+      alert("حصل خطأ");
+      console.error(error);
+      return;
+    }
+
+    alert("✅ تم إرسال الطلب");
+    clearCart();
+    orderForm.reset();
+  });
+
+  updateCartUI();
+  loadOffers();
+</script>
+
+</body>
+</html>

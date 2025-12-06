@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AYA ELSAYED - Beauty Shop</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Tajawal',sans-serif}
+body{background:#fdf4f2;color:#4b4b4b}
+a{text-decoration:none;color:inherit}
+
+/* Header */
+header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:20px 40px
+}
+.logo{font-size:1.5rem;font-weight:700}
+nav a{margin-left:25px;font-weight:500}
+
+/* Hero */
+.hero{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:40px;
+  flex-wrap:wrap
+}
+.hero-text{max-width:500px}
+.hero-text h1{font-size:2rem;margin-bottom:15px}
+.hero-text p{margin-bottom:20px}
+.hero-text button{
+  padding:10px 25px;
+  border:none;
+  background:#d8a49c;
+  color:#fff;
+  border-radius:5px;
+  cursor:pointer
+}
+.hero img{
+  max-width:300px;
+  border-radius:15px;
+  margin-top:20px
+}
+html{
+  scroll-behavior: smooth;
+}
+
+/* Products */
+.products{padding:40px}
+.products h2,p{text-align:center;margin-bottom:25px}
+.product-list{
+  display:flex;
+  gap:25px;
+  justify-content:center;
+  flex-wrap:wrap
+}
+.product-item{
+  background:#fff0f0;
+  padding:20px;
+  border-radius:10px;
+  width:150px;
+  text-align:center;
+  cursor:pointer;
+  transition:.2s;
+  box-shadow:0 5px 10px rgba(0,0,0,.1)
+}
+.product-item:hover{transform:translateY(-5px)}
+.product-item img{width:100px;margin-bottom:10px}
+.product-item span{font-weight:600}
+
+/* Offers */
+.offers{
+  display:flex;
+  gap:20px;
+  justify-content:center;
+  padding:40px;
+  flex-wrap:wrap
+}
+.offer-item{
+  background:#f3e6e2;
+  padding:30px;
+  width:200px;
+  border-radius:15px;
+  text-align:center
+}
+
+/* Footer */
+footer{
+  background:#fff0f0;
+  padding:20px;
+  text-align:center;
+  color:#888;
+  margin-top:20px
+}
+
+/* Cart */
+.cart-btn{
+  position:fixed;
+  bottom:20px;
+  left:20px;
+  background:#d8a49c;
+  border:none;
+  color:#fff;
+  padding:15px;
+  border-radius:50%;
+  font-size:1.2rem;
+  cursor:pointer;
+  z-index:1000
+}
+.cart-modal{
+  position:fixed;
+  bottom:80px;
+  left:20px;
+  width:300px;
+  background:#fff;
+  padding:20px;
+  border-radius:10px;
+  box-shadow:0 5px 15px rgba(0,0,0,.2);
+  display:none
+}
+.cart-item{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:10px
+}
+.qty-controls{
+  display:flex;
+  align-items:center;
+  gap:6px
+}
+.qty-controls button{
+  background:#d8a49c;
+  color:#fff;
+  border:none;
+  width:22px;
+  height:22px;
+  border-radius:50%;
+  cursor:pointer
+}
+
+/* Checkout Form */
+.checkout-form{
+  margin-top:15px;
+  border-top:1px solid #ddd;
+  padding-top:10px
+}
+.checkout-form input{
+  width:100%;
+  padding:8px;
+  margin-bottom:8px;
+  border:1px solid #ccc;
+  border-radius:5px
+}
+.checkout-form button{
+  width:100%;
+  padding:10px;
+  background:#d8a49c;
+  color:#fff;
+  border:none;
+  border-radius:5px;
+  cursor:pointer
+}
+</style>
+</head>
+
+<body>
+
+<header id="top">
+  <div class="logo">AYA ELSAYED</div>
+  <nav>
+    <a href="#top">الرئيسية</a>
+    <a href="#products">المنتجات</a>
+    <a href="offers.html">العروض</a>
+    <a href="https://wa.me/201207147614?text=‎ ايه 
+عايزه مساعده">تواصل</a>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="hero-text">
+    <h1>DISCOVER THE LATEST BEAUTY PRODUCTS</h1>
+    <p>Enhance your beauty with our curated selection of cosmetics</p>
+  </div>
+  <img src="logo.jpg" alt="Beauty Products">
+</section>
+
+<section class="products">
+  <h2>FEATURED PRODUCTS</h2>
+  <p>اضغط علي المنتج لاضافته الي السلة</p>
+  <div class="product-list" id="products"></div>
+</section>
+
+<section class="offers">
+  <div class="offer-item">
+    <h3>MAKEUP SALE</h3>
+    <p>Up To 50% Off</p>
+  </div>
+  <div class="offer-item">
+    <h3>NEW COLLECTION</h3>
+    <p>Natural Beauty</p>
+  </div>
+</section>
+
+<button class="cart-btn" onclick="toggleCart()">🛒</button>
+
+<div class="cart-modal" id="cartModal">
+  <h3>سلة المشتريات</h3>
+  <div id="cartItems"></div>
+  <p id="totalPrice"><strong>الإجمالي: </strong> جنيه0</p>
+
+  <div class="checkout-form">
+    <input type="text" id="custName" placeholder="الاسم">
+    <input type="text" id="custPhone" placeholder="رقم الموبايل">
+    <input type="text" id="custAddress" placeholder="العنوان">
+    <button onclick="submitOrder()">إكمال الطلب</button>
+  </div>
+</div>
+
+<footer>
+  AYA ELSAYED © 2025
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const supabaseUrl = "https://qccpddjnozehorhleegz.supabase.co";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjY3BkZGpub3plaG9yaGxlZWd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2MTc0NzEsImV4cCI6MjA3OTE5MzQ3MX0.WzG0u9c6wY9eTTh0olIzrPSSPoHhuQhmLTS7zPxXBGA";
+
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+let cart=[];
+const cartModal=document.getElementById("cartModal");
+const cartItems=document.getElementById("cartItems");
+const totalPrice=document.getElementById("totalPrice");
+
+function toggleCart(){
+  cartModal.style.display = cartModal.style.display==="block"?"none":"block";
+}
+
+function addToCart(name, price){
+  let item = cart.find(p => p.name === name);
+  if(item) item.qty++;
+  else cart.push({name, price, qty:1});
+  
+  renderCart();
+  
+  // رسالة للمستخدم
+  alert(`✅ تم إضافة "${name}" إلى السلة!`);
+}
+
+
+function changeQty(i,val){
+  cart[i].qty+=val;
+  if(cart[i].qty<=0) cart.splice(i,1);
+  renderCart();
+}
+
+function renderCart(){
+  cartItems.innerHTML="";
+  let total=0;
+
+  cart.forEach((item,i)=>{
+    total+=item.price*item.qty;
+    cartItems.innerHTML+=`
+    <div class="cart-item">
+      <span>${item.name}</span>
+      <div class="qty-controls">
+        <button onclick="changeQty(${i},-1)">−</button>
+        <span>${item.qty}</span>
+        <button onclick="changeQty(${i},1)">+</button>
+      </div>
+      <span>$${(item.price*item.qty).toFixed(2)}</span>
+    </div>`;
+  });
+
+  totalPrice.innerHTML=`<strong>الإجمالي: </strong>$${total.toFixed(2)}`;
+}
+
+async function submitOrder() {
+  const name = document.getElementById("custName").value;
+  const phone = document.getElementById("custPhone").value;
+  const address = document.getElementById("custAddress").value;
+
+  if (cart.length === 0) {
+    alert("السلة فاضية");
+    return;
+  }
+  if (!name || !phone || !address) {
+    alert("من فضلك كمل بياناتك");
+    return;
+  }
+
+  const total = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+
+  // البيانات التي سيتم حفظها في جدول orders
+  const orderData = {
+    customer_name: name,
+    phone: phone,
+    address: address,
+    items: cart.map(item => ({
+  name: item.name,
+  price: item.price,
+  qty: item.qty
+})),
+       // سيتم حفظها JSON تلقائياً لأن العمود jsonb
+    total: total,
+    status: "pending"   // ممكن تعدلها بعدين في لوحة الأدمن
+  };
+
+  // حفظ الطلب في Supabase
+  const { data, error } = await supabase
+    .from('orders')
+    .insert([orderData]);
+
+  if (error) {
+    console.error(error);
+    alert("❌ حصل خطأ أثناء إرسال الطلب");
+    return;
+  }
+
+  alert("✅ تم إرسال الطلب وسيظهر الآن في لوحة الأدمن");
+
+  // تفريغ السلة
+  cart = [];
+  renderCart();
+  cartModal.style.display = "none";
+}
+
+
+// ✅ تحميل المنتجات من Supabase
+async function loadProducts() {
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*');
+
+    if (error) {
+      console.error('Error fetching products:', error);
+      return;
+    }
+
+    const productsContainer = document.getElementById('products');
+    productsContainer.innerHTML = '';
+
+    data.forEach(product => {
+      const productItem = document.createElement('div');
+      productItem.classList.add('product-item');
+      productItem.setAttribute("onclick", "addToCart(`" + product.title + "`, " + product.price + ")");
+
+
+productItem.innerHTML = `
+  <img src="${product.image_url || 'https://via.placeholder.com/100'}" alt="${product.title}">
+  <span>${product.title}</span>
+  <p>$${product.price}</p>
+`;
+
+      productsContainer.appendChild(productItem);
+    });
+  } catch (err) {
+    console.error('Unexpected error:', err);
+  }
+}
+
+window.addEventListener('DOMContentLoaded', loadProducts);
+</script>
+
+</body>
+</html>

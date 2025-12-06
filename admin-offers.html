@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>لوحة الأدمن - إضافة العروض</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+<style>
+body{font-family:'Tajawal',sans-serif;padding:20px;background:#fdf4f2;color:#333;}
+h2{text-align:center;margin-bottom:20px;}
+table{width:100%;border-collapse:collapse;margin-top:20px;}
+th, td{border:1px solid #ccc;padding:10px;text-align:center;}
+th{background:#d8a49c;color:#fff;}
+input{padding:8px;width:100%;margin:5px 0;border:1px solid #ccc;border-radius:5px;}
+button{padding:8px 12px;background:#d8a49c;color:white;border:none;border-radius:5px;cursor:pointer;margin-top:10px;}
+.delete-btn{background:#e63946;}
+select{padding:3px 6px;border-radius:3px;}
+</style>
+</head>
+<body>
+
+<h2>🔥 إضافة عرض جديد</h2>
+<div>
+  <input id="oTitle" placeholder="اسم العرض">
+  <input id="oDesc" placeholder="وصف العرض">
+  <input id="oOldPrice" type="number" placeholder="السعر القديم">
+  <input id="oNewPrice" type="number" placeholder="السعر الجديد">
+  <input id="oImage" type="file" accept="image/*">
+  <button onclick="addOffer()">إضافة العرض</button>
+</div>
+
+<h2>🏷️ العروض الحالية</h2>
+<table>
+  <thead>
+    <tr>
+      <th>الصورة</th>
+      <th>الاسم</th>
+      <th>الوصف</th>
+      <th>السعر القديم</th>
+      <th>السعر الجديد</th>
+      <th>حذف</th>
+    </tr>
+  </thead>
+  <tbody id="offersTable"></tbody>
+</table>
+
+<h2>🛒 الطلبات الحالية</h2>
+<table>
+  <thead>
+    <tr>
+      <th>الاسم</th>
+      <th>رقم الهاتف</th>
+      <th>العنوان</th>
+      <th>العناصر (الكمية)</th>
+      <th>الإجمالي</th>
+      <th>الحالة</th>
+      <th>تعديل</th>
+    </tr>
+  </thead>
+  <tbody id="ordersTable"></tbody>
+</table>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// إنشاء العميل
+const SUPABASE_URL = "https://qccpddjnozehorhleegz.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjY3BkZGpub3plaG9yaGxlZWd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2MTc0NzEsImV4cCI6MjA3OTE5MzQ3MX0.WzG0u9c6wY9eTTh0olIzrPSSPoHhuQhmLTS7zPxXBGA";
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// إضافة عرض جديد
+async function addOffer() {
+  const title = document.getElementById("oTitle").value;
+  const desc = document.getElementById("oDesc").value;
+  const old_price = document.getElementById("oOldPrice").value;
+  const new_price = document.getElementById("oNewPrice").value;
+  const imageFile = document.getElementById("oImage").files[0];
+
+  if (!title || !new_price || !imageFile) {
+    alert("⚠ أكمل جميع البيانات");
+    return;
+  }
+
+  const ext = imageFile.name.split('.').pop();
+  const fileName = `${Date.now()}.${ext}`;
+
+  const { error: uploadError } = await supabaseClient.storage
+    .from("products-images")
+    .upload(fileName, imageFile);
+
+  if(uploadError){
+    console.error(uploadError);
+    alert("❌ خطأ في رفع الصورة");
+    return;
+  }
+
+  const { data } = supabaseClient.storage
+    .from("products-images")
+    .getPublicUrl(fileName);
+
+  const { error } = await supabaseClient.from("offers").insert([{
+    title,
+    description: desc,
+    old_price,
+    new_price,
+    image_url: data.publicUrl,
+    active: true
+  }]);
+
+  if(error){
+    console.error(error);
+    alert("❌ حدث خطأ أثناء إضافة العرض");
+    return;
+  }
+
+  alert("✅ تم إضافة العرض بنجاح");
+  loadOffers();
+}
+
+// تحميل العروض
+async function loadOffers(){
+  const { data, error } = await supabaseClient.from("offers").select("*").order("created_at",{ascending:false});
+  if(error){ console.error(error); return; }
+
+  const table = document.getElementById("offersTable");
+  table.innerHTML = "";
+  data.forEach(o=>{
+    table.innerHTML += `
+      <tr>
+        <td><img src="${o.image_url}" width="60"></td>
+        <td>${o.title}</td>
+        <td>${o.description}</td>
+        <td>${o.old_price}</td>
+        <td>${o.new_price}</td>
+        <td><button class="delete-btn" onclick="deleteOffer('${o.id}')">حذف</button></td>
+      </tr>
+    `;
+  });
+}
+
+// حذف العرض
+async function deleteOffer(id){
+  await supabaseClient.from("offers").delete().eq("id", id);
+  loadOffers();
+}
+
+// تحميل الطلبات مع أزرار تعديل وحذف
+async function loadOrders(){
+  const { data, error } = await supabaseClient
+    .from("order_offers")
+    .select("*")
+    .order("created_at",{ascending:false});
+
+  if(error){
+    console.error("خطأ في جلب الطلبات:", error);
+    return;
+  }
+
+  const table = document.getElementById("ordersTable");
+  table.innerHTML = "";
+
+  data.forEach(order=>{
+    let itemsHtml = (order.items || []).map(i => `${i.title} (${i.qty})`).join("<br>");
+    table.innerHTML += `
+      <tr>
+        <td>${order.customer_name || "غير محدد"}</td>
+        <td>${order.phone}</td>
+        <td>${order.address}</td>
+        <td>${itemsHtml}</td>
+        <td>${order.total} جنيه</td>
+        <td>${order.status}</td>
+        <td>
+          <select onchange="changeOrderStatus('${order.id}', this.value)">
+            <option value="جديد" ${order.status==='جديد'?'selected':''}>جديد</option>
+            <option value="قيد التجهيز" ${order.status==='قيد التجهيز'?'selected':''}>قيد التجهيز</option>
+            <option value="تم التوصيل" ${order.status==='تم التوصيل'?'selected':''}>تم التوصيل</option>
+          </select>
+          <button style="background:#e63946;color:white;border:none;border-radius:3px;padding:3px 6px;cursor:pointer" onclick="deleteOrder('${order.id}')">حذف</button>
+        </td>
+      </tr>
+    `;
+  });
+}
+
+// تغيير حالة الطلب
+async function changeOrderStatus(id, newStatus){
+  console.log("تغيير الحالة:", id, newStatus); // للتأكد من القيم
+  const { data, error } = await supabaseClient
+    .from("order_offers")
+    .update({ status: newStatus })
+    .eq("id", id);
+
+  if(error){
+    console.error("خطأ في تغيير الحالة:", error);
+    alert("❌ حدث خطأ أثناء تغيير الحالة");
+    return;
+  }
+  console.log("تم التحديث:", data);
+  loadOrders();
+}
+
+
+// حذف الطلب
+async function deleteOrder(id){
+  if(!confirm("هل أنت متأكد من حذف هذا الطلب؟")) return;
+
+  const { error } = await supabaseClient
+    .from("order_offers")
+    .delete()
+    .eq("id", id);
+
+  if(error){
+    console.error("خطأ في حذف الطلب:", error);
+    alert("❌ حدث خطأ أثناء حذف الطلب");
+    return;
+  }
+  loadOrders();
+}
+
+// تحميل العروض والطلبات عند فتح الصفحة
+window.onload = () => {
+  loadOffers();
+  loadOrders();
+};
+</script>
+
+</body>
+</html>

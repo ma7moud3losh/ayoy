@@ -34,16 +34,17 @@ a{display:inline-block;margin-bottom:20px;color:black;background-color:#d8a49c ;
 
 <table>
   <thead>
-    <tr>
-      <th>اسم العميل</th>
-      <th>الموبايل</th>
-      <th>العنوان</th>
-      <th>الإجمالي</th>
-      <th>الحالة</th>
-      <th>التاريخ</th>
-      <th>تغيير الحالة</th>
-    </tr>
-  </thead>
+  <tr>
+    <th>اسم العميل</th>
+    <th>الموبايل</th>
+    <th>العنوان</th>
+    <th>المنتجات</th>   <!-- ✅ جديد -->
+    <th>الإجمالي</th>
+    <th>الحالة</th>
+    <th>التاريخ</th>
+    <th>تغيير الحالة</th>
+  </tr>
+</thead>
   <tbody id="ordersTable"></tbody>
 </table>
 
@@ -192,24 +193,58 @@ async function loadOrders() {
   table.innerHTML = "";
 
   data.forEach(order => {
-    table.innerHTML += `
-      <tr>
-        <td>${order.customer_name}</td>
-        <td>${order.phone}</td>
-        <td>${order.address}</td>
-        <td>${order.total} جنيه</td>
-        <td><b>${order.status}</b></td>
-        <td>${new Date(order.created_at).toLocaleDateString("ar-EG")}</td>
-        <td>
-          <select onchange="updateOrderStatus('${order.id}', this.value)">
-            <option ${order.status==='جديد'?'selected':''}>جديد</option>
-            <option ${order.status==='قيد التنفيذ'?'selected':''}>قيد التنفيذ</option>
-            <option ${order.status==='تم التسليم'?'selected':''}>تم التسليم</option>
-          </select>
-        </td>
-      </tr>
+
+  // ✅ التأكد إن items Array
+  const items = Array.isArray(order.items)
+    ? order.items
+    : JSON.parse(order.items || "[]");
+
+  // ✅ تحويل المنتجات لـ HTML
+  const productsHTML = items
+  .map(item => {
+    const name =
+      item.name ||
+      item.title ||
+      item.product_name ||
+      "منتج";
+
+    const qty =
+      item.qty ||
+      item.quantity ||
+      item.count ||
+      1;
+
+    return `
+      <div style="text-align:right">
+        • ${name} × ${qty}
+      </div>
     `;
-  });
+  })
+  .join("");
+
+
+  table.innerHTML += `
+    <tr>
+      <td>${order.customer_name}</td>
+      <td>${order.phone}</td>
+      <td>${order.address}</td>
+
+      <td>${productsHTML || "—"}</td> <!-- ✅ المنتجات -->
+
+      <td>${order.total} جنيه</td>
+      <td><b>${order.status}</b></td>
+      <td>${new Date(order.created_at).toLocaleDateString("ar-EG")}</td>
+      <td>
+        <select onchange="updateOrderStatus('${order.id}', this.value)">
+          <option ${order.status==='جديد'?'selected':''}>جديد</option>
+          <option ${order.status==='قيد التنفيذ'?'selected':''}>قيد التنفيذ</option>
+          <option ${order.status==='تم التسليم'?'selected':''}>تم التسليم</option>
+        </select>
+      </td>
+    </tr>
+  `;
+});
+
 }
 // -----------------------------
 // حذف منتج
